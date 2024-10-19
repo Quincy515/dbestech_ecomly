@@ -1,5 +1,6 @@
 # dbestech_ecomly
 
+### 1.Theming the app
 ```shell
 flutter create dbestech_ecomly --empty --org com.fluentspoken
 cd dbestech_ecomly
@@ -409,3 +410,228 @@ class MainApp extends StatelessWidget {
   }
 }
 ```
+
+### 2.Caching frontend
+
+在 `lib/core/common/` 目录下创建 `singletons/cache.dart` 文件，添加如下内容：
+
+```dart
+import 'package:flutter/material.dart';
+
+class Cache {
+  Cache._internal();
+
+  static final Cache instance = Cache._internal();
+
+  String? _sessionToke;
+  String? _userId;
+  final themeModeNotifier = ValueNotifier(ThemeMode.system);
+
+  String? get sessionToken => _sessionToke;
+  String? get userId => _userId;
+
+  void setSessionToken(String? newToken) {
+    if (_sessionToke != newToken) _sessionToke = newToken;
+  }
+
+  void setUserId(String? newUserId) {
+    if (_userId != newUserId) _userId = newUserId;
+  }
+
+  void setThemeMode(ThemeMode newThemeMode) {
+    if (themeModeNotifier.value != newThemeMode) {
+      themeModeNotifier.value = newThemeMode;
+    }
+  }
+
+  void resetSession() {
+    setSessionToken(null);
+    setUserId(null);
+  }
+}
+
+```
+
+新建文件 `lib/core/common/app/cache_helper.dart`，添加如下内容：
+
+```dart
+import 'package:dbestech_ecomly/core/common/singletons/cache.dart';
+import 'package:dbestech_ecomly/core/extensions/string_extension.dart';
+import 'package:dbestech_ecomly/core/extensions/theme_mode_extension.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class CacheHelper {
+  const CacheHelper(this._prefs);
+
+  final SharedPreferences _prefs;
+  static const _sesssionTokenKey = 'user-session-token';
+  static const _userIdKey = 'user-id';
+  static const _themeModeKey = 'theme-mode';
+  static const _firstTimerKey = 'is-user-first-timer';
+
+  Future<bool> cacheSessionToken(String token) async {
+    try {
+      final result = await _prefs.setString(_sesssionTokenKey, token);
+      Cache.instance.setSessionToken(token);
+      return result;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> cacheUserId(String userId) async {
+    try {
+      final result = await _prefs.setString(_userIdKey, userId);
+      Cache.instance.setUserId(userId);
+      return result;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> cacheThemeMode(ThemeMode themeMode) async {
+    await _prefs.setString(_themeModeKey, themeMode.stringValue);
+    Cache.instance.setThemeMode(themeMode);
+  }
+
+  Future<void> cacheFirstTimer() async {
+    await _prefs.setBool(_firstTimerKey, false);
+  }
+
+  String? getSessionToken() {
+    final sessionToken = _prefs.getString(_sesssionTokenKey);
+    if (sessionToken case String()) {
+      Cache.instance.setSessionToken(sessionToken);
+    }
+    return sessionToken;
+  }
+
+  String? getUserId() {
+    final userId = _prefs.getString(_userIdKey);
+    if (userId case String()) {
+      Cache.instance.setUserId(userId);
+    }
+    return userId;
+  }
+
+  ThemeMode getThemeMode() {
+    final themeModeStringValue = _prefs.getString(_themeModeKey);
+    final themeMode = themeModeStringValue?.toThemeMode ?? ThemeMode.system;
+    Cache.instance.setThemeMode(themeMode);
+    return themeMode;
+  }
+
+  Future<void> resetSession() async {
+    await _prefs.remove(_sesssionTokenKey);
+    await _prefs.remove(_userIdKey);
+    Cache.instance.resetSession();
+  }
+
+  bool isFirstTime() => _prefs.getBool(_firstTimerKey) ?? true;
+}
+```
+
+新增文件 `lib/core/extensions/string_extension.dart`，添加如下内容：
+
+```dart
+import 'package:flutter/material.dart';
+
+extension StringExt on String {
+  ThemeMode get toThemeMode {
+    return switch (toLowerCase()) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+}
+```
+
+新增文件 `lib/core/extensions/theme_mode_extension.dart`，添加如下内容：
+
+```dart
+import 'package:flutter/material.dart';
+
+extension ThemeModeExt on ThemeMode {
+  String get stringValue {
+    return switch (this) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      _ => 'system',
+    };
+  }
+}
+```
+
+新增文件 `lib/core/extensions/context_extension.dart` ，添加如下内容：
+
+```dart
+import 'package:dbestech_ecomly/core/common/singletons/cache.dart';
+import 'package:flutter/material.dart';
+
+extension ContextExt on BuildContext {
+  ThemeData get theme => Theme.of(this);
+
+  MediaQueryData get mediaQuery => MediaQuery.of(this);
+
+  Size get size => MediaQuery.sizeOf(this);
+
+  double get height => size.height;
+  double get width => size.width;
+
+  bool get isDarkMode {
+    return switch (Cache.instance.themeModeNotifier.value) {
+      ThemeMode.system =>
+        MediaQuery.platformBrightnessOf(this) == Brightness.dark,
+      ThemeMode.dark => true,
+      _ => false,
+    };
+  }
+
+  bool get isLightMode => !isDarkMode;
+}
+```
+
+修改 `lib/core/utils/core_utils.dart` 文件，如下内容：
+
+```dart
+import 'package:flutter/material.dart';
+
+abstract class CoreUtils {
+  const CoreUtils();
+
+  static Color adaptiveColour(
+    BuildContext context, {
+    required Color lightModeColour,
+    required Color darkModeColour,
+  }) {
+    return MediaQuery.platformBrightnessOf(context) == Brightness.light
+        ? lightModeColour
+        : darkModeColour;
+  }
+}
+```
+
+修改为
+
+```dart
+import 'package:dbestech_ecomly/core/extensions/context_extension.dart';
+import 'package:flutter/material.dart';
+
+abstract class CoreUtils {
+  const CoreUtils();
+
+  static Color adaptiveColour(
+    BuildContext context, {
+    required Color lightModeColour,
+    required Color darkModeColour,
+  }) {
+    // return MediaQuery.platformBrightnessOf(context) == Brightness.light
+    //     ? lightModeColour
+    //     : darkModeColour;
+    return context.isDarkMode ? darkModeColour : lightModeColour;
+  }
+}
+```
+

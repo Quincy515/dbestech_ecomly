@@ -1,3 +1,4 @@
+import 'package:dbestech_ecomly/core/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 abstract class CoreUtils {
@@ -8,8 +9,6 @@ abstract class CoreUtils {
     required Color lightModeColour,
     required Color darkModeColour,
   }) {
-    return MediaQuery.platformBrightnessOf(context) == Brightness.light
-        ? lightModeColour
-        : darkModeColour;
+    return context.isDarkMode ? darkModeColour : lightModeColour;
   }
 }
