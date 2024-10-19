@@ -1,0 +1,55 @@
+name: dbestech_ecomly
+description: "A new Flutter project."
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.4.3 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  lottie: ^3.1.3
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/lottie/
+
+  fonts:
+    - family: Switzer
+      fonts:
+        - asset: assets/fonts/Switzer-Black.otf
+        - asset: assets/fonts/Switzer-BlackItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Bold.otf
+        - asset: assets/fonts/Switzer-BoldItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Extrabold.otf
+        - asset: assets/fonts/Switzer-ExtraboldItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Extralight.otf
+        - asset: assets/fonts/Switzer-ExtralightItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Italic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Light.otf
+        - asset: assets/fonts/Switzer-LightItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Medium.otf
+        - asset: assets/fonts/Switzer-MediumItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Regular.otf
+        - asset: assets/fonts/Switzer-Semibold.otf
+        - asset: assets/fonts/Switzer-SemiboldItalic.otf
+          style: italic
+        - asset: assets/fonts/Switzer-Thin.otf
+        - asset: assets/fonts/Switzer-ThinItalic.otf
+          style: italic
