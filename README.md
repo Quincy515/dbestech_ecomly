@@ -635,3 +635,424 @@ abstract class CoreUtils {
 }
 ```
 
+### 3.App routing
+
+安装 `go_router`
+
+```shell
+flutter pub add go_router
+```
+
+新建文件 `lib/core/services/router.dart` 
+
+```dart
+part 'router.main.dart';
+```
+
+和 `lib/core/services/router.main.dart` 文件，添加如下内容：
+
+```dart
+part of 'router.dart';
+
+final router = GoRouter(
+  debugLogDiagnostics: true,
+  initialLocation: '/',
+  routes: [],
+);
+```
+
+在 `lib/main.dart` 中进行配置路由
+
+```dart
+    return MaterialApp(
+      title: 'Ecomly',
+      theme: theme,
+      themeMode: ThemeMode.system,
+      darkTheme: theme.copyWith(
+          scaffoldBackgroundColor: Colours.darkThemeBGDark,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colours.darkThemeBGDark,
+            foregroundColor: Colours.lightThemeWhiteColour,
+          )),
+      home: Scaffold(
+        body: Center(
+          child: Text('Hello World!',
+              style: TextStyles.headingRegular
+                  .copyWith(color: Colours.classicAdaptiveTextColour(context))),
+        ),
+      ),
+    );
+```
+修改为
+```dart
+    return MaterialApp.router(
+      title: 'Ecomly',
+      routerConfig: router,
+      theme: theme,
+      themeMode: ThemeMode.system,
+      darkTheme: theme.copyWith(
+          scaffoldBackgroundColor: Colours.darkThemeBGDark,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colours.darkThemeBGDark,
+            foregroundColor: Colours.lightThemeWhiteColour,
+          )),
+    );
+```
+
+新增页面文件
+
+```shell 
+mkdir lib/src/on_boarding/presentaion/views/on_boarding_screen.dart
+```
+
+在 `lib/src/on_boarding/presentaion/views/on_boarding_screen.dart` 文件中添加如下内容：
+
+```dart
+import 'package:flutter/material.dart';
+
+class OnBoardingView extends StatefulWidget {
+  const OnBoardingView({super.key});
+
+  @override
+  State<OnBoardingView> createState() => _OnBoardingViewState();
+}
+
+class _OnBoardingViewState extends State<OnBoardingView> {
+  final pageController = PageController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: SafeArea(
+      child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: PageView(
+            allowImplicitScrolling: true,
+            controller: pageController,
+            children: const [],
+          )),
+    ));
+  }
+}
+```
+
+新增共用的组件 `lib/core/common/widgets/app_bar_bottom.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:dbestech_ecomly/core/utils/core_utils.dart';
+import 'package:flutter/material.dart';
+
+class AppBarBottom extends StatelessWidget implements PreferredSizeWidget {
+  const AppBarBottom({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PreferredSize(
+      preferredSize: preferredSize,
+      child: ColoredBox(
+        color: CoreUtils.adaptiveColour(
+          context,
+          lightModeColour: Colors.white,
+          darkModeColour: Colours.darkThemeDarkSharpColour,
+        ),
+        child: const SizedBox(height: 1, width: double.maxFinite),
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => Size.zero;
+}
+```
+
+新增页面 `lib/src/auth/presentation/views/splash_screen.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/widgets/ecomly.dart';
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:flutter/material.dart';
+
+class SplashView extends StatefulWidget {
+  const SplashView({super.key});
+
+  @override
+  State<SplashView> createState() => _SplashViewState();
+}
+
+class _SplashViewState extends State<SplashView> {
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colours.lightThemePrimaryColour,
+      body: EcomlyLogo(),
+    );
+  }
+}
+```
+
+在 `lib/core/common/widgets/ecomly.dart` 中新增 `EcomlyLogo` 组件
+
+```dart
+import 'package:dbestech_ecomly/core/extensions/text_extension.dart';
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:flutter/material.dart';
+
+class EcomlyLogo extends StatelessWidget {
+  const EcomlyLogo({super.key, this.style});
+
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        text: 'Ecom',
+        style: style ?? TextStyles.appLogo.white,
+        children: const [
+          TextSpan(
+            text: 'ly',
+            style: TextStyle(color: Colours.lightThemeSecondaryColour),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+扩展 `text` 新增文件 `lib/core/extensions/text_extension.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:flutter/material.dart';
+
+extension TextStyleExt on TextStyle {
+  TextStyle get orange => copyWith(color: Colours.lightThemeSecondaryColour);
+
+  TextStyle get dark => copyWith(color: Colours.lightThemePrimaryTextColour);
+
+  TextStyle get grey => copyWith(color: Colours.lightThemeSecondaryTextColour);
+
+  TextStyle get white => copyWith(color: Colours.lightThemeWhiteColour);
+
+  TextStyle get primary => copyWith(color: Colours.lightThemePrimaryColour);
+
+  TextStyle adaptiveColour(BuildContext context) =>
+      copyWith(color: Colours.classicAdaptiveTextColour(context));
+}
+```
+
+修改 `lib/core/services/router.main.dart` 可以查看 `splash` 页面效果
+
+```dart
+part of 'router.dart';
+
+final router = GoRouter(
+  debugLogDiagnostics: true,
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const SplashView(),
+    ),
+  ],
+);
+```
+
+新增页面文件 `lib/src/auth/presentation/views/login_screen.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/widgets/app_bar_bottom.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:flutter/material.dart';
+
+class LoginView extends StatelessWidget {
+  const LoginView({super.key});
+
+  static const path = '/login';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Sign in',
+          style: TextStyles.headingSemiBold,
+        ),
+        bottom: const AppBarBottom(),
+      ),
+      body: const Placeholder(),
+    );
+  }
+}
+```
+
+创建 `lib/src/dashboard/presentation/views/dashboard_screen.dart` 文件
+
+```dart
+import 'package:dbestech_ecomly/src/dashboard/presentation/utils/dashboard_utils.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class DashboardView extends StatelessWidget {
+  const DashboardView({super.key, required this.state, required this.child});
+
+  final GoRouterState state;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: DashboardUtils.scaffoldKey,
+      body: child,
+    );
+  }
+}
+
+```
+
+和文件 `lib/src/dashboard/presentation/utils/dashboard_utils.dart`
+
+```dart
+import 'package:flutter/material.dart';
+
+abstract class DashboardUtils {
+  const DashboardUtils();
+
+  static final scaffoldKey = GlobalKey<ScaffoldState>();
+}
+```
+
+新增 `dashboard` 路由
+
+```dart
+part of 'router.dart';
+
+final router = GoRouter(
+  debugLogDiagnostics: true,
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) async {
+      },
+    ),
+  ],
+);
+```
+
+这里使用 `async` 报错 
+
+```shell
+The argument type 'Future<Null> Function(BuildContext, GoRouterState)' can't be assigned to the parameter type 'Widget Function(BuildContext, GoRouterState)?'. dartargument_type_not_assignable
+```
+
+使用 `get_it` 依赖注入解决
+
+```shell
+flutter pub add get_it
+```
+
+新增文件 `lib/core/services/injection_container.dart`
+
+```dart
+part 'injection_container.main.dart';
+```
+
+和文件 `lib/core/services/injection_container.main.dart`
+
+```dart
+part of 'injection_container.dart';
+
+final sl = GetIt.instance;
+
+Future<void> init() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  sl
+    ..registerLazySingleton(() => CacheHelper(sl()))
+    ..registerLazySingleton(() => prefs);
+}
+
+```
+
+修改 `lib/mian.dart` 文件
+
+```dart
+...
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await init();
+  runApp(const MainApp());
+}
+...
+```
+
+新增 `lib/src/home/presentation/views/home_view.dart` 文件
+
+```dart
+import 'package:flutter/material.dart';
+
+class HomeView extends StatelessWidget {
+  const HomeView({super.key});
+
+  static const path = '/home';
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+完成路由 `lib/core/services/router.main.dart` 文件修改
+
+```dart
+part of 'router.dart';
+
+final router = GoRouter(
+  debugLogDiagnostics: true,
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      redirect: (context, state) {
+        final cacheHelper = sl<CacheHelper>()
+          ..getSessionToken()
+          ..getUserId();
+
+        if ((Cache.instance.sessionToken == null ||
+                Cache.instance.userId == null) &&
+            !cacheHelper.isFirstTime()) {
+          return LoginView.path;
+        }
+        if (state.extra == 'home') return HomeView.path;
+
+        return null;
+      },
+      builder: (context, state) {
+        final cacheHelper = sl<CacheHelper>()
+          ..getSessionToken()
+          ..getUserId();
+
+        if (cacheHelper.isFirstTime()) {
+          return const OnBoardingView();
+        }
+        return const SplashView();
+      },
+    ),
+    GoRoute(
+        path: LoginView.path, builder: (context, state) => const LoginView()),
+    ShellRoute(
+      builder: (context, state, child) =>
+          DashboardView(state: state, child: child),
+      routes: [
+        GoRoute(
+            path: HomeView.path, builder: (context, state) => const HomeView()),
+      ],
+    ),
+  ],
+);
+```
