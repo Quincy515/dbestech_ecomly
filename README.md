@@ -1163,3 +1163,442 @@ class OnBoardingInfoSection extends StatelessWidget {
   }
 }
 ```
+
+### 5.App domain layer
+新增目录结构如下
+
+```shell
+mkdir lib/core/common/entities lib/src/auth/domain lib/src/auth/domain/entities lib/src/auth/domain/repositories lib/src/auth/domain/usercases
+```
+├───lib
+│   ├───core
+│   │   ├───common
+│   │   │   ├───app
+│   │   │   ├───entities
+.....
+│   └───src
+│       ├───auth
+│       │   ├───domain
+│       │   │   ├───entities
+│       │   │   ├───repositories
+│       │   │   └───usercases
+│       │   └───presentation
+│       │       └───views
+```
+
+新增第三方库
+
+```shell
+flutter pub add equatable && flutter pub get
+```
+
+在文件 `lib\core\common\entities\user.dart` 中使用
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/address.dart';
+import 'package:equatable/equatable.dart';
+
+class User extends Equatable {
+  const User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.isAdmin,
+    required this.wishlist,
+    this.address,
+    this.phone,
+  });
+
+  const User.empty()
+      : id = '',
+        name = '',
+        email = '',
+        isAdmin = false,
+        wishlist = const [],
+        address = null,
+        phone = null;
+
+  final String id;
+  final String name;
+  final String email;
+  final bool isAdmin;
+  final List<WishlistProduct> wishlist;
+  final Address? address;
+  final String? phone;
+
+  @override
+  List<Object?> get props => [id, name, email, isAdmin, wishlist.length];
+}
+
+class WishlistProduct {}
+```
+
+新增文件 `lib\core\common\entities\address.dart`
+
+```dart
+import 'package:equatable/equatable.dart';
+
+class Address extends Equatable {
+  const Address({
+    this.street,
+    this.apartment,
+    this.city,
+    this.postalCode,
+    this.country,
+  });
+
+  const Address.empty()
+      : street = '',
+        apartment = '',
+        city = '',
+        postalCode = '',
+        country = '';
+
+  final String? street;
+  final String? apartment;
+  final String? city;
+  final String? postalCode;
+  final String? country;
+
+  bool get isEmpty =>
+      street == null && city == null && postalCode == null && country == null;
+
+  bool get isNotEmpty => !isEmpty;
+
+  @override
+  List<Object?> get props => [street, city, postalCode, country];
+}
+```
+
+新增文件 `lib\src\auth\domain\repositories\auth_repository.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+
+abstract class AuthRepository {
+  const AuthRepository();
+
+  ResultFuture<void> register({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+  });
+
+  ResultFuture<User> login({
+    required String email,
+    required String password,
+  });
+
+  ResultFuture<void> forgotPassword(String email);
+
+  ResultFuture<void> verifyOTP({
+    required String email,
+    required String otp,
+  });
+
+  ResultFuture<void> resetPassword({
+    required String email,
+    required String newPassword,
+  });
+
+  ResultFuture<bool> verifyToken();
+}
+```
+
+这里用到了 `Either<Failure, dynamic>` 所以需要使用第三方库 `dartz` 并且自己封装 `Failure` 和 `Exception`
+
+```shell
+flutter pub add dartz && flutter pub get
+```
+
+封装 `Either<Failure, dynamic>` 新增文件 `lib\core\utils\typedefs.dart`
+
+```dart
+import 'package:dartz/dartz.dart';
+import 'package:dbestech_ecomly/core/errors/failures.dart';
+
+typedef DataMap = Map<String, dynamic>;
+
+typedef ResultFuture<T> = Future<Either<Failure, T>>;
+```
+
+新增文件 `lib\core\errors\failures.dart` 
+
+```dart
+import 'package:dbestech_ecomly/core/errors/exceptions.dart';
+import 'package:equatable/equatable.dart';
+
+sealed class Failure extends Equatable {
+  const Failure({required this.message, required this.statusCode});
+
+  final String message;
+  final int statusCode;
+
+  String get errorMessage => '$statusCode Error: $message';
+
+  @override
+  List<Object?> get props => [message, statusCode];
+}
+
+class ServerFailure extends Failure {
+  const ServerFailure({required super.message, required super.statusCode});
+
+  ServerFailure.fromException(ServerException e)
+      : this(message: e.message, statusCode: e.statusCode);
+}
+
+class CacheFailure extends Failure {
+  // 3 - Data not found in cache
+  const CacheFailure({required super.message}) : super(statusCode: 3);
+
+  CacheFailure.fromException(CacheException e) : this(message: e.message);
+}
+```
+
+新增文件 `lib\core\errors\exceptions.dart`
+
+```dart
+import 'package:equatable/equatable.dart';
+
+class ServerException extends Equatable implements Exception {
+  const ServerException({required this.message, required this.statusCode});
+
+  final String message;
+  final int statusCode;
+
+  String get errorMessage => '$statusCode Error: $message';
+
+  @override
+  List<Object?> get props => [message, statusCode];
+}
+
+class CacheException extends Equatable implements Exception {
+  const CacheException({required this.message});
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+```
+
+新增用户授权相关的 `usecase`，新增文件 `lib\src\auth\domain\usercases\forgot_password.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+
+class ForgotPassword extends UsecaseWithParams<void, String> {
+  const ForgotPassword(this._repo);
+
+  final AuthRepository _repo;
+
+  // ResultFuture<void> forgotPassword(String email) =>
+  //     _repo.forgotPassword(email);
+
+  @override
+  ResultFuture<void> call(String params) => _repo.forgotPassword(params);
+}
+```
+
+这里使用 `call` 方法是为了方便使用，比如
+
+```dart
+main() {
+  final fpUsecase = ForgotPassword();
+  // fpUsecase().forgotPassword('email');
+  // 简化成 ↓↓↓
+  fpUsecase('email');
+
+}
+```
+
+但是为了 `call` 的安全性，所以使用 `UsecaseWithParams` 和 `UsecaseWithoutParams` 进行封装 `lib\core\usecase\usecase.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+
+abstract class UsecaseWithParams<Type, Params> {
+  const UsecaseWithParams();
+
+  ResultFuture<Type> call(Params params);
+}
+
+abstract class UsecaseWithoutParams<Type> {
+  const UsecaseWithoutParams();
+
+  ResultFuture<Type> call();
+}
+```
+
+比如再添加一个 `usecase` 文件 `lib\src\auth\domain\usercases\login.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+import 'package:equatable/equatable.dart';
+
+class Login extends UsecaseWithParams<User, LoginParams> {
+  const Login(this._repo);
+
+  final AuthRepository _repo;
+
+  @override
+  ResultFuture<User> call(LoginParams params) => _repo.login(
+        email: params.email,
+        password: params.password,
+      );
+}
+
+class LoginParams extends Equatable {
+  const LoginParams({
+    required this.email,
+    required this.password,
+  });
+
+  const LoginParams.empty()
+      : email = '',
+        password = '';
+
+  final String email;
+  final String password;
+
+  @override
+  List<Object?> get props => [email, password];
+}
+```
+
+完成剩余的 `lib\src\auth\domain\usercases\register.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+import 'package:equatable/equatable.dart';
+
+class Register extends UsecaseWithParams<void, RegisterParams> {
+  const Register(this._repo);
+
+  final AuthRepository _repo;
+
+  @override
+  ResultFuture<void> call(RegisterParams params) => _repo.register(
+        email: params.email,
+        password: params.password,
+        name: params.name,
+        phone: params.phone,
+      );
+}
+
+class RegisterParams extends Equatable {
+  const RegisterParams({
+    required this.email,
+    required this.password,
+    required this.name,
+    required this.phone,
+  });
+
+  const RegisterParams.empty()
+      : email = '',
+        password = '',
+        name = '',
+        phone = '';
+
+  final String email;
+  final String password;
+  final String name;
+  final String phone;
+
+  @override
+  List<Object?> get props => [email, password, name, phone];
+}
+```
+
+`lib\src\auth\domain\usercases\reset_password.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+import 'package:equatable/equatable.dart';
+
+class ResetPassword extends UsecaseWithParams<void, ResetPasswordParams> {
+  const ResetPassword(this._repo);
+
+  final AuthRepository _repo;
+
+  @override
+  ResultFuture<void> call(ResetPasswordParams params) => _repo.resetPassword(
+        email: params.email,
+        newPassword: params.newPassword,
+      );
+}
+
+class ResetPasswordParams extends Equatable {
+  final String email;
+  final String newPassword;
+
+  const ResetPasswordParams({
+    required this.email,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [email, newPassword];
+}
+```
+
+`lib\src\auth\domain\usercases\verify_token.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+
+class VerifyToken extends UsecaseWithoutParams<bool>{
+  const VerifyToken(this._repo);
+
+  final AuthRepository _repo;
+
+  @override
+  ResultFuture<bool> call() => _repo.verifyToken();
+}
+```
+
+`lib\src\auth\domain\usercases\verify_otp.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+import 'package:equatable/equatable.dart';
+
+class VerifyOTP extends UsecaseWithParams<void, VerifyOTPParams> {
+  const VerifyOTP(this._repo);
+
+  final AuthRepository _repo;
+
+  @override
+  ResultFuture<void> call(params) =>
+      _repo.verifyOTP(email: params.email, otp: params.otp);
+}
+
+class VerifyOTPParams extends Equatable {
+  const VerifyOTPParams({
+    required this.email,
+    required this.otp,
+  });
+
+  final String email;
+  final String otp;
+
+  @override
+  List<Object?> get props => [email, otp];
+}
+```
