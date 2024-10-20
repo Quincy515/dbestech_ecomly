@@ -347,7 +347,6 @@ abstract class CoreUtils {
 现在可以修改 `core/res/styles/colours.dart` 文件，添加如下内容：
 
 ```dart
-...
 import 'package:dbestech_ecomly/core/utils/core_utils.dart'; // add this
 import 'package:flutter/material.dart';
 
@@ -1055,4 +1054,112 @@ final router = GoRouter(
     ),
   ],
 );
+```
+
+### 4.App onboarding screen
+
+修改 `lib\src\on_boarding\presentaion\views\on_boarding_view.dart` 文件
+
+```dart
+import 'package:dbestech_ecomly/src/on_boarding/presentaion/on_boarding_info_section.dart';
+import 'package:flutter/material.dart';
+
+class OnBoardingView extends StatefulWidget {
+  const OnBoardingView({super.key});
+
+  @override
+  State<OnBoardingView> createState() => _OnBoardingViewState();
+}
+
+class _OnBoardingViewState extends State<OnBoardingView> {
+  final pageController = PageController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: SafeArea(
+      child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: PageView(
+            allowImplicitScrolling: true,
+            controller: pageController,
+            children: const [
+              OnBoardingInfoSection.second(),
+              OnBoardingInfoSection.first(),
+            ],
+          )),
+    ));
+  }
+}
+```
+
+新增文件 `lib\src\on_boarding\presentaion\on_boarding_info_section.dart` 文件
+
+```dart
+import 'package:dbestech_ecomly/core/extensions/text_extension.dart';
+import 'package:dbestech_ecomly/core/res/media.dart';
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:flutter/material.dart';
+
+class OnBoardingInfoSection extends StatelessWidget {
+  const OnBoardingInfoSection.first({super.key}) : first = true;
+  const OnBoardingInfoSection.second({super.key}) : first = false;
+
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: AlignmentDirectional.center,
+      children: [
+        Image.asset(first ? Media.onBoardingFemale : Media.onBoardingMale),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            switch (first) {
+              true => Text.rich(
+                  textAlign: TextAlign.left,
+                  TextSpan(
+                    text: '${DateTime.now().year}\n',
+                    style: TextStyles.headingBold.orange,
+                    children: [
+                      TextSpan(
+                        text: 'Winter Sale is live now.',
+                        style: TextStyle(
+                          color: Colours.classicAdaptiveTextColour(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _ => Text.rich(
+                  textAlign: TextAlign.left,
+                  TextSpan(
+                    text: 'Flash Sale\n',
+                    style: TextStyles.headingBold.adaptiveColour(context),
+                    children: [
+                      const TextSpan(
+                        text: "Men's ",
+                        style: TextStyle(
+                          color: Colours.lightThemeSecondaryTextColour,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Shirts & Watches',
+                        style: TextStyle(
+                          color: Colours.classicAdaptiveTextColour(context),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+            }
+          ],
+        ),
+      ],
+    );
+  }
+}
 ```

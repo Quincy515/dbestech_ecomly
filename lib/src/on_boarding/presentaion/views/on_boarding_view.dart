@@ -1,3 +1,4 @@
+import 'package:dbestech_ecomly/src/on_boarding/presentaion/on_boarding_info_section.dart';
 import 'package:flutter/material.dart';
 
 class OnBoardingView extends StatefulWidget {
@@ -19,7 +20,10 @@ class _OnBoardingViewState extends State<OnBoardingView> {
           child: PageView(
             allowImplicitScrolling: true,
             controller: pageController,
-            children: const [],
+            children: const [
+              OnBoardingInfoSection.second(),
+              OnBoardingInfoSection.first(),
+            ],
           )),
     ));
   }
