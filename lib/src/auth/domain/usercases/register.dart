@@ -1,4 +1,3 @@
-import 'package:dbestech_ecomly/core/common/entities/user.dart';
 import 'package:dbestech_ecomly/core/usecase/usecase.dart';
 import 'package:dbestech_ecomly/core/utils/typedefs.dart';
 import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';

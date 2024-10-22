@@ -6,6 +6,7 @@
     - [3.App routing](#3app-routing)
     - [4.App onboarding screen](#4app-onboarding-screen)
     - [5.App domain layer](#5app-domain-layer)
+    - [6.The data layer](#6the-data-layer)
 
 
 ### 1.Theming the app
@@ -1178,6 +1179,8 @@ class OnBoardingInfoSection extends StatelessWidget {
 ```shell
 mkdir lib/core/common/entities lib/src/auth/domain lib/src/auth/domain/entities lib/src/auth/domain/repositories lib/src/auth/domain/usercases
 ```
+
+```shell
 ├───lib
 │   ├───core
 │   │   ├───common
@@ -1610,3 +1613,397 @@ class VerifyOTPParams extends Equatable {
   List<Object?> get props => [email, otp];
 }
 ```
+
+笔记 `domain` 层：
+1. 先写 `entities`
+2. 完成 `repositories`
+3. 再写 `usecases`
+
+`lib\core\common\entities\user.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/address.dart';
+import 'package:equatable/equatable.dart';
+
+class User extends Equatable {
+  const User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.isAdmin,
+    required this.wishlist,
+    this.address,
+    this.phone,
+  });
+
+  const User.empty()
+      : id = '',
+        name = '',
+        email = '',
+        isAdmin = false,
+        wishlist = const [],
+        address = null,
+        phone = null;
+
+  final String id;
+  final String name;
+  final String email;
+  final bool isAdmin;
+  final List<WishlistProduct> wishlist;
+  final Address? address;
+  final String? phone;
+
+  @override
+  List<Object?> get props => [id, name, email, isAdmin, wishlist.length];
+}
+
+class WishlistProduct {}
+```
+
+`lib\src\auth\domain\repositories\auth_repository.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+
+abstract class AuthRepository {
+  const AuthRepository();
+
+  ResultFuture<void> register({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+  });
+
+  ResultFuture<User> login({
+    required String email,
+    required String password,
+  });
+
+  ResultFuture<void> forgotPassword(String email);
+
+  ResultFuture<void> verifyOTP({
+    required String email,
+    required String otp,
+  });
+
+  ResultFuture<void> resetPassword({
+    required String email,
+    required String newPassword,
+  });
+
+  ResultFuture<bool> verifyToken();
+}
+```
+
+最后根据 `repositories` 写 `usecases`
+
+`lib\src\auth\domain\usercases\forgot_password.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/domain/repositories/auth_repository.dart';
+
+class ForgotPassword extends UsecaseWithParams<void, String> {
+  const ForgotPassword(this._repo);
+
+  final AuthRepository _repo;
+
+  // ResultFuture<void> forgotPassword(String email) =>
+  //     _repo.forgotPassword(email);
+
+  @override
+  ResultFuture<void> call(String params) => _repo.forgotPassword(params);
+}
+```
+
+
+### 6.The data layer
+
+新增 `wishlist` 相关的 `entities` 文件 `lib\src\wishlist\domain\entities\wishlist_product.dart`
+
+```dart
+import 'package:equatable/equatable.dart';
+
+class WishlistProduct extends Equatable {
+  const WishlistProduct({
+    required this.productId,
+    required this.productName,
+    required this.productPrice,
+    required this.productImage,
+    required this.productExists,
+    required this.productOutOfStock,
+  });
+
+  final String productId;
+  final String productName;
+  final double productPrice;
+  final String productImage;
+  final bool productExists;
+  final bool productOutOfStock;
+
+  const WishlistProduct.empty()
+      : productId = '',
+        productName = '',
+        productPrice = 0.0,
+        productImage = '',
+        productExists = true,
+        productOutOfStock = true;
+
+  @override
+  List<Object> get props {
+    return [
+      productId,
+      productName,
+      productPrice,
+      productImage,
+      productExists,
+      productOutOfStock,
+    ];
+  }
+}
+```
+
+然后使用 `vscode` 插件 [`dart data class generator`](https://marketplace.visualstudio.com/items?itemName=hzgood.dart-data-class-generator) 自动生成 `fromMap` 和 `toMap` 方法，然后转移到新建文件 `lib\src\wishlist\data\models\wishlist_product_model.dart` 中
+
+```dart
+import 'dart:convert';
+
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/wishlist/domain/entities/wishlist_product.dart';
+
+class WishlistProductModel extends WishlistProduct {
+  const WishlistProductModel(
+      {required super.productId,
+      required super.productName,
+      required super.productPrice,
+      required super.productImage,
+      required super.productExists,
+      required super.productOutOfStock});
+
+  const WishlistProductModel.empty()
+      : this(
+          productExists: true,
+          productOutOfStock: true,
+          productId: '',
+          productName: '',
+          productPrice: 0.0,
+          productImage: '',
+        );
+
+  WishlistProductModel copyWith({
+    String? productId,
+    String? productName,
+    double? productPrice,
+    String? productImage,
+    bool? productExists,
+    bool? productOutOfStock,
+  }) {
+    return WishlistProductModel(
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      productPrice: productPrice ?? this.productPrice,
+      productImage: productImage ?? this.productImage,
+      productExists: productExists ?? this.productExists,
+      productOutOfStock: productOutOfStock ?? this.productOutOfStock,
+    );
+  }
+
+  DataMap toMap() {
+    return <String, dynamic>{
+      'productId': productId,
+      'productName': productName,
+      'productPrice': productPrice,
+      'productImage': productImage,
+      'productExists': productExists,
+      'productOutOfStock': productOutOfStock,
+    };
+  }
+
+  factory WishlistProductModel.fromMap(DataMap map) {
+    return WishlistProductModel(
+      productId: map['productId'] as String,
+      productName: map['productName'] as String,
+      productPrice: (map['productPrice'] as num).toDouble(),
+      productImage: map['productImage'] as String,
+      productExists: map['productExists'] as bool? ?? true,
+      productOutOfStock: map['productOutOfStock'] as bool? ?? false,
+    );
+  }
+
+  String toJson() => jsonEncode(toMap());
+
+  factory WishlistProductModel.fromJson(String source) =>
+      WishlistProductModel.fromMap(jsonDecode(source) as DataMap);
+}
+```
+
+同理根据 `lib\core\common\entities\address.dart` 中的 `Address` 类生成 `lib\src\auth\data\models\address_model.dart` 文件
+
+```dart
+import 'dart:convert';
+
+import 'package:dbestech_ecomly/core/common/entities/address.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+
+class AddressModel extends Address {
+  const AddressModel({
+    super.street,
+    super.apartment,
+    super.city,
+    super.postalCode,
+    super.country,
+  });
+
+  const AddressModel.empty()
+      : this(
+          street: '',
+          apartment: '',
+          city: '',
+          postalCode: '',
+          country: '',
+        );
+
+  Address copyWith({
+    String? street,
+    String? apartment,
+    String? city,
+    String? postalCode,
+    String? country,
+  }) {
+    return Address(
+      street: street ?? this.street,
+      apartment: apartment ?? this.apartment,
+      city: city ?? this.city,
+      postalCode: postalCode ?? this.postalCode,
+      country: country ?? this.country,
+    );
+  }
+
+  DataMap toMap() {
+    return <String, dynamic>{
+      'street': street,
+      'apartment': apartment,
+      'city': city,
+      'postalCode': postalCode,
+      'country': country,
+    };
+  }
+
+  factory AddressModel.fromMap(DataMap map) {
+    return AddressModel(
+      street: map['street'] != null ? map['street'] as String : null,
+      apartment: map['apartment'] != null ? map['apartment'] as String : null,
+      city: map['city'] != null ? map['city'] as String : null,
+      postalCode:
+          map['postalCode'] != null ? map['postalCode'] as String : null,
+      country: map['country'] != null ? map['country'] as String : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory AddressModel.fromJson(String source) =>
+      AddressModel.fromMap(json.decode(source) as DataMap);
+}
+```
+
+最后就可以根据 `lib\core\common\entities\user.dart` 生成 `lib\src\auth\data\models\user_model.dart` 文件
+
+```dart
+import 'dart:convert';
+
+import 'package:dbestech_ecomly/core/common/entities/address.dart';
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/auth/data/models/address_model.dart';
+import 'package:dbestech_ecomly/src/wishlist/data/models/wishlist_product_model.dart';
+import 'package:dbestech_ecomly/src/wishlist/domain/entities/wishlist_product.dart';
+
+class UserModel extends User {
+  const UserModel({
+    required super.id,
+    required super.name,
+    required super.email,
+    required super.isAdmin,
+    required super.wishlist,
+    super.address,
+    super.phone,
+  });
+
+  UserModel.empty()
+      : this(
+          id: '',
+          name: '',
+          email: '',
+          isAdmin: true,
+          wishlist: [],
+          address: null,
+          phone: null,
+        );
+
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    bool? isAdmin,
+    List<WishlistProduct>? wishlist,
+    Address? address,
+    String? phone,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      isAdmin: isAdmin ?? this.isAdmin,
+      wishlist: wishlist ?? this.wishlist,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+    );
+  }
+
+  DataMap toMap() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'email': email,
+      'isAdmin': isAdmin,
+      'wishlist': wishlist
+          .map((product) => (product as WishlistProductModel).toMap())
+          .toList(),
+      if (address != null) 'address': (address as AddressModel).toMap(),
+      if (phone != null) 'phone': phone,
+    };
+  }
+
+  factory UserModel.fromMap(DataMap map) {
+    final address = AddressModel.fromMap({
+      if (map case {'street': String street}) 'street': street,
+      if (map case {'apartment': String apartment}) 'apartment': apartment,
+      if (map case {'city': String city}) 'city': city,
+      if (map case {'postalCode': String postalCode}) 'postalCode': postalCode,
+      if (map case {'country': String country}) 'country': country,
+    });
+    return UserModel(
+      id: map['id'] as String? ?? map['_id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String,
+      isAdmin: map['isAdmin'] as bool,
+      wishlist: List<DataMap>.from(map['wishlist'] as List<dynamic>)
+          .map<WishlistProductModel>(WishlistProductModel.fromMap)
+          .toList(),
+      address: address.isEmpty ? null : address,
+      phone: map['phone']
+          as String?, // map['phone'] != null ? map['phone'] as String : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory UserModel.fromJson(String source) =>
+      UserModel.fromMap(json.decode(source) as DataMap);
+}
+```
+
