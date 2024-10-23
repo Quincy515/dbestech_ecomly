@@ -9,6 +9,9 @@
     - [6.The data layer](#6the-data-layer)
     - [7.Interface adapter](#7interface-adapter)
     - [8.Authentication persistence-riverpod](#8authentication-persistence-riverpod)
+    - [9.User Feature](#9user-feature)
+      - [1. domain repositories](#1-domain-repositories)
+      - [2. domain usecase](#2-domain-usecase)
 
 
 ### 1.Theming the app
@@ -2387,4 +2390,97 @@ abstract class CoreUtils {
   }
 }
 
+```
+
+### 9.User Feature
+
+#### 1. domain repositories
+新建文件 `lib/src/user/domain/repos/user_repo.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+
+abstract class UserRepo {
+  const UserRepo();
+
+  ResultFuture<User> getUser(String userId);
+
+  ResultFuture<User> updateUser({
+    required String userId,
+    required DataMap updateData,
+  });
+
+  ResultFuture<String> getUserPaymentProfile(String userId);
+}
+```
+
+#### 2. domain usecase
+
+新建文件 `lib/src/user/domain/usercases/get_user.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/user/domain/repos/user_repo.dart';
+
+class GetUser extends UsecaseWithParams<User, String> {
+  const GetUser(this._repo);
+
+  final UserRepo _repo;
+
+  @override
+  ResultFuture<User> call(String params) => _repo.getUser(params);
+}
+```
+
+新建文件 `lib/src/user/domain/usercases/get_user_payment_profile.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/user/domain/repos/user_repo.dart';
+
+class GetUserPaymentProfile extends UsecaseWithParams<String, String> {
+  const GetUserPaymentProfile(this._repo);
+
+  final UserRepo _repo;
+
+  @override
+  ResultFuture<String> call(String params) =>
+      _repo.getUserPaymentProfile(params);
+}
+```
+
+新建文件 `lib/src/user/domain/usercases/update_user.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/usecase/usecase.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/user/domain/repos/user_repo.dart';
+import 'package:equatable/equatable.dart';
+
+class UpdateUser extends UsecaseWithParams<User, UpdateUserParams> {
+  const UpdateUser(this._repo);
+
+  final UserRepo _repo;
+
+  @override
+  ResultFuture<User> call(UpdateUserParams params) => _repo.updateUser(
+        userId: params.userId,
+        updateData: params.updateData,
+      );
+}
+
+class UpdateUserParams extends Equatable {
+  const UpdateUserParams({required this.userId, required this.updateData});
+
+  final String userId;
+  final DataMap updateData;
+
+  @override
+  List<Object?> get props => [userId, updateData];
+}
 ```
