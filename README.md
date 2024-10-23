@@ -7,6 +7,7 @@
     - [4.App onboarding screen](#4app-onboarding-screen)
     - [5.App domain layer](#5app-domain-layer)
     - [6.The data layer](#6the-data-layer)
+    - [7.Interface adapter](#7interface-adapter)
 
 
 ### 1.Theming the app
@@ -2007,3 +2008,177 @@ class UserModel extends User {
 }
 ```
 
+### 7.Interface adapter
+一般以状态管理工具作为 `adapter`
+
+```shell
+flutter pub add flutter_riverpod riverpod_annotation && 
+flutter pub add --dev riverpod_lint riverpod_generator build_runner&&
+flutter pub get
+```
+
+使用 `riverpod` 的模板代码
+
+```dart
+part 'auth_adapter.g.dart';
+
+@riverpod
+class AuthAdapter extends _$AuthAdapter {
+  @override
+  build() {}
+  
+  late ForgotPassword _forgotPassword;
+  late Login _login;
+  late Register _register;
+  late ResetPassword _resetPassword;
+  late VerifyOTP _verifyOTP;
+  late VerifyToken _verifyToken;
+}
+```
+
+新建 `lib\src\auth\presentation\app\adapter\auth_state.dart` 文件
+
+```dart
+part of 'auth_adapter.dart';
+
+sealed class AuthState extends Equatable {
+  const AuthState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+// the initial state
+final class AuthInitial extends AuthState {
+  const AuthInitial();
+}
+
+// the loading state
+final class AuthLoading extends AuthState {
+  const AuthLoading();
+}
+
+// the success state
+final class OTPSent extends AuthState {
+  const OTPSent();
+}
+
+final class LoggedIn extends AuthState {
+  const LoggedIn(this.user);
+
+  final User user;
+
+  @override
+  List<Object?> get props => [user];
+}
+
+final class Registered extends AuthState {
+  const Registered();
+}
+
+final class PasswordReset extends AuthState {
+  const PasswordReset();
+}
+
+final class OTPVerified extends AuthState {
+  const OTPVerified();
+}
+
+final class TokenVerified extends AuthState {
+  final bool isValid;
+
+  const TokenVerified(this.isValid);
+
+  @override
+  List<Object?> get props => [isValid];
+}
+
+// the error state
+class AuthError extends AuthState {
+  final String message;
+
+  const AuthError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+```
+
+修改 `lib\core\services\injection_container.main.dart` 文件
+
+```dart
+part of 'injection_container.dart';
+
+final sl = GetIt.instance;
+
+Future<void> init() async {
+  await _cacheInit();
+  await _authInit();
+}
+
+Future<void> _authInit() async {
+  sl
+    ..registerLazySingleton(() => ForgotPassword(sl()))
+    ..registerLazySingleton(() => Login(sl()))
+    ..registerLazySingleton(() => Register(sl()))
+    ..registerLazySingleton(() => ResetPassword(sl()))
+    ..registerLazySingleton(() => VerifyOTP(sl()))
+    ..registerLazySingleton(() => VerifyToken(sl()))
+    ..registerLazySingleton<AuthRepository>(
+        () => AuthRepositoryImplementation(sl()))
+    ..registerLazySingleton<AuthRemoteDataSource>(
+        () => AuthRemoteDataSourceImplementation(sl()))
+    ..registerLazySingleton(http.Client.new);
+}
+
+Future<void> _cacheInit() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  sl
+    ..registerLazySingleton(() => CacheHelper(sl()))
+    ..registerLazySingleton(() => prefs);
+}
+```
+
+完成 `lib\src\auth\presentation\app\adapter\auth_adapter.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/services/injection_container.dart';
+import 'package:dbestech_ecomly/src/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:dbestech_ecomly/src/auth/data/repositories/auth_repository_implementation.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/forgot_password.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/login.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/register.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/reset_password.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/verify_otp.dart';
+import 'package:dbestech_ecomly/src/auth/domain/usercases/verify_token.dart';
+import 'package:equatable/equatable.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'auth_adapter.g.dart';
+part 'auth_state.dart';
+
+@riverpod
+class AuthAdapter extends _$AuthAdapter {
+  @override
+  AuthState build() {
+    _forgotPassword = sl<ForgotPassword>();
+    _login = sl<Login>();
+    _register = sl<Register>();
+    _resetPassword = sl<ResetPassword>();
+    _verifyOTP = sl<VerifyOTP>();
+    _verifyToken = sl<VerifyToken>();
+    return const AuthInitial();
+  }
+
+  late ForgotPassword _forgotPassword;
+  late Login _login;
+  late Register _register;
+  late ResetPassword _resetPassword;
+  late VerifyOTP _verifyOTP;
+  late VerifyToken _verifyToken;
+}
+```
+
+然后运行 `dart run build_runner build watch --delete-conflicting-outputs` 生成文件 `lib\src\auth\presentation\app\adapter\auth_adapter.g.dart`
