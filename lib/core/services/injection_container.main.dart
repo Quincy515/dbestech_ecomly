@@ -5,6 +5,17 @@ final sl = GetIt.instance;
 Future<void> init() async {
   await _cacheInit();
   await _authInit();
+  await _userInit();
+}
+
+Future<void> _userInit() async {
+  sl
+    ..registerLazySingleton(() => GetUser(sl()))
+    ..registerLazySingleton(() => UpdateUser(sl()))
+    ..registerLazySingleton(() => GetUserPaymentProfile(sl()))
+    ..registerLazySingleton<UserRepo>(() => UserRepoImpl(sl()))
+    ..registerLazySingleton<UserRemoteDataSource>(
+        () => UserRemoteDataSrcImpl(sl()));
 }
 
 Future<void> _authInit() async {

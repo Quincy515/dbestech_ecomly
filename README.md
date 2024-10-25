@@ -13,6 +13,11 @@
       - [1. domain repositories](#1-domain-repositories)
       - [2. domain usecase](#2-domain-usecase)
       - [3. data数据层](#3-data数据层)
+    - [10.User interface adapter and splash screen logic finalization](#10user-interface-adapter-and-splash-screen-logic-finalization)
+      - [1. `lib\src\user\presentation\app\auth_user_state.dart`](#1-libsrcuserpresentationappauth_user_statedart)
+      - [2. `lib\src\user\presentation\app\auth_user_provider.dart`](#2-libsrcuserpresentationappauth_user_providerdart)
+      - [3. `lib\core\services\injection_container.main.dart`](#3-libcoreservicesinjection_containermaindart)
+      - [4. 修改页面 `lib\src\auth\presentation\views\splash_view.dart`](#4-修改页面-libsrcauthpresentationviewssplash_viewdart)
 
 
 ### 1.Theming the app
@@ -2685,6 +2690,232 @@ class UserRemoteDataSrcImpl implements UserRemoteDataSource {
       debugPrintStack(stackTrace: s);
       throw ServerException(message: e.toString(), statusCode: 500);
     }
+  }
+}
+
+```
+
+### 10.User interface adapter and splash screen logic finalization
+
+#### 1. `lib\src\user\presentation\app\auth_user_state.dart`
+
+```dart 
+part of 'auth_user_provider.dart';
+
+abstract class AuthUserState extends Equatable {
+  const AuthUserState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class AuthUserInitial extends AuthUserState {
+  const AuthUserInitial();
+}
+
+class GettingUserData extends AuthUserState {
+  const GettingUserData();
+}
+
+class UpdatingUserData extends AuthUserState {
+  const UpdatingUserData();
+}
+
+class GettingUserPaymentProfile extends AuthUserState {
+  const GettingUserPaymentProfile();
+}
+
+class FetchedUser extends AuthUserState {
+  const FetchedUser(this.user);
+
+  final User user;
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class UserUpdated extends AuthUserState {
+  const UserUpdated();
+}
+
+class FetchedUserPaymentProfile extends AuthUserState {
+  const FetchedUserPaymentProfile(this.paymentProfileUrl);
+
+  final String paymentProfileUrl;
+
+  @override
+  List<Object?> get props => [paymentProfileUrl];
+}
+
+class AuthUserError extends AuthUserState {
+  const AuthUserError(this.message);
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
+```
+
+#### 2. `lib\src\user\presentation\app\auth_user_provider.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/app/riverpod/current_user_provider.dart';
+import 'package:dbestech_ecomly/core/common/entities/user.dart';
+import 'package:dbestech_ecomly/core/services/injection_container.dart';
+import 'package:dbestech_ecomly/core/utils/typedefs.dart';
+import 'package:dbestech_ecomly/src/user/domain/usercases/get_user.dart';
+import 'package:dbestech_ecomly/src/user/domain/usercases/get_user_payment_profile.dart';
+import 'package:dbestech_ecomly/src/user/domain/usercases/update_user.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'auth_user_provider.g.dart';
+part 'auth_user_state.dart';
+
+@riverpod
+class AuthUser extends _$AuthUser {
+  @override
+  AuthUserState build([GlobalKey? familyKey]) {
+    _getUser = sl<GetUser>();
+    _updateUser = sl<UpdateUser>();
+    _getUserPaymentProfile = sl<GetUserPaymentProfile>();
+    return const AuthUserInitial();
+  }
+
+  late GetUser _getUser;
+  late UpdateUser _updateUser;
+  late GetUserPaymentProfile _getUserPaymentProfile;
+
+  Future<void> getUserById(String userId) async {
+    state = const GettingUserData();
+    final result = await _getUser(userId);
+    result.fold(
+      (failure) => state = AuthUserError(failure.errorMessage),
+      (user) {
+        ref.read(currentUserProvider.notifier).setUser(user);
+        state = FetchedUser(user);
+      },
+    );
+  }
+
+  Future<void> updateUser({
+    required String userId,
+    required DataMap updateData,
+  }) async {
+    state = const UpdatingUserData();
+    final result = await _updateUser(
+      UpdateUserParams(userId: userId, updateData: updateData),
+    );
+    result.fold(
+      (failure) => state = AuthUserError(failure.errorMessage),
+      (user) {
+        ref.read(currentUserProvider.notifier).setUser(user);
+        state = const UserUpdated();
+      },
+    );
+  }
+
+  Future<void> getUserPaymentProfile(String userId) async {
+    state = const GettingUserPaymentProfile();
+    final result = await _getUserPaymentProfile(userId);
+    result.fold(
+      (failure) => state = AuthUserError(failure.errorMessage),
+      (paymentProfileUrl) =>
+          state = FetchedUserPaymentProfile(paymentProfileUrl),
+    );
+  }
+}
+
+```
+
+#### 3. `lib\core\services\injection_container.main.dart`
+
+```dart
+part of 'injection_container.dart';
+
+final sl = GetIt.instance;
+
+Future<void> init() async {
+  await _cacheInit();
+  await _authInit();
+  await _userInit();
+}
+
+Future<void> _userInit() async {
+  sl
+    ..registerLazySingleton(() => GetUser(sl()))
+    ..registerLazySingleton(() => UpdateUser(sl()))
+    ..registerLazySingleton(() => GetUserPaymentProfile(sl()))
+    ..registerLazySingleton<UserRepo>(() => UserRepoImpl(sl()))
+    ..registerLazySingleton<UserRemoteDataSource>(
+        () => UserRemoteDataSrcImpl(sl()));
+}
+```
+
+#### 4. 修改页面 `lib\src\auth\presentation\views\splash_view.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/app/cache_helper.dart';
+import 'package:dbestech_ecomly/core/common/singletons/cache.dart';
+import 'package:dbestech_ecomly/core/common/widgets/ecomly.dart';
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:dbestech_ecomly/core/services/injection_container.dart';
+import 'package:dbestech_ecomly/core/utils/core_utils.dart';
+import 'package:dbestech_ecomly/src/auth/presentation/app/adapter/auth_adapter.dart';
+import 'package:dbestech_ecomly/src/user/presentation/app/auth_user_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+class SplashView extends ConsumerStatefulWidget {
+  const SplashView({super.key});
+
+  @override
+  ConsumerState<SplashView> createState() => _SplashViewState();
+}
+
+class _SplashViewState extends ConsumerState<SplashView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authAdapterProvider().notifier).verifyToken();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // new add
+    ref.listen(currentUserProvider, (previous, next) {
+      if (next != null) {
+        CoreUtils.postFrameCall(() => context.go('/', extra: 'home'));
+      }
+    });
+    ref.listen(authAdapterProvider(), (previous, next) async {
+      if (next is TokenVerified) {
+        if (next.isValid) {
+          ref // new add
+              .read(authUserProvider().notifier) // new add
+              .getUserById(Cache.instance.userId!); // new add
+        } else {
+          await sl<CacheHelper>().resetSession();
+          CoreUtils.postFrameCall(() => context.go('/'));
+        }
+      } else if (next is AuthError) {
+        if (next.message.startsWith('401')) {
+          await sl<CacheHelper>().resetSession();
+          CoreUtils.postFrameCall(() => context.go('/'));
+          return;
+        }
+      }
+    });
+    return const Scaffold(
+      backgroundColor: Colours.lightThemePrimaryColour,
+      body: EcomlyLogo(),
+    );
   }
 }
 
