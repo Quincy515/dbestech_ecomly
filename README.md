@@ -18,6 +18,7 @@
       - [2. `lib\src\user\presentation\app\auth_user_provider.dart`](#2-libsrcuserpresentationappauth_user_providerdart)
       - [3. `lib\core\services\injection_container.main.dart`](#3-libcoreservicesinjection_containermaindart)
       - [4. 修改页面 `lib\src\auth\presentation\views\splash_view.dart`](#4-修改页面-libsrcauthpresentationviewssplash_viewdart)
+    - [11.On boarding finalization](#11on-boarding-finalization)
 
 
 ### 1.Theming the app
@@ -2915,6 +2916,144 @@ class _SplashViewState extends ConsumerState<SplashView> {
     return const Scaffold(
       backgroundColor: Colours.lightThemePrimaryColour,
       body: EcomlyLogo(),
+    );
+  }
+}
+
+```
+
+### 11.On boarding finalization
+
+`lib\core\common\widgets\rounded_button.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/widgets/ecomly.dart';
+import 'package:dbestech_ecomly/core/extensions/text_extension.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:flutter/material.dart';
+
+class RoundedButton extends StatelessWidget {
+  const RoundedButton({
+    super.key,
+    this.onPressed,
+    required this.text,
+    this.height,
+    this.padding,
+    this.textStyle,
+    this.backgroundColor,
+  });
+
+  final VoidCallback? onPressed;
+  final String text;
+  final double? height;
+  final EdgeInsetsGeometry? padding;
+  final TextStyle? textStyle;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        height: height ?? 66,
+        width: double.maxFinite,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: () {
+            // Unfocus the current focused widget to prevent keyboard from disappearing
+            // 点击按钮时，关闭键盘
+            FocusManager.instance.primaryFocus?.unfocus();
+            onPressed?.call();
+          },
+          child: Text(
+            text,
+            style: textStyle ?? TextStyles.buttonTextHeadingSemiBold.white,
+          ),
+        ));
+  }
+}
+```
+
+`lib\src\on_boarding\presentaion\on_boarding_info_section.dart`
+
+```dart
+import 'package:dbestech_ecomly/core/common/app/cache_helper.dart';
+import 'package:dbestech_ecomly/core/common/widgets/rounded_button.dart';
+import 'package:dbestech_ecomly/core/extensions/text_extension.dart';
+import 'package:dbestech_ecomly/core/res/media.dart';
+import 'package:dbestech_ecomly/core/res/styles/colours.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:dbestech_ecomly/core/services/injection_container.dart';
+import 'package:dbestech_ecomly/src/auth/presentation/views/login_view.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class OnBoardingInfoSection extends StatelessWidget {
+  const OnBoardingInfoSection.first({super.key}) : first = true;
+  const OnBoardingInfoSection.second({super.key}) : first = false;
+
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: AlignmentDirectional.center,
+      children: [
+        Image.asset(first ? Media.onBoardingFemale : Media.onBoardingMale),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            switch (first) {
+              true => Text.rich(
+                  textAlign: TextAlign.left,
+                  TextSpan(
+                    text: '${DateTime.now().year}\n',
+                    style: TextStyles.headingBold.orange,
+                    children: [
+                      TextSpan(
+                        text: 'Winter Sale is live now.',
+                        style: TextStyle(
+                          color: Colours.classicAdaptiveTextColour(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _ => Text.rich(
+                  textAlign: TextAlign.left,
+                  TextSpan(
+                    text: 'Flash Sale\n',
+                    style: TextStyles.headingBold.adaptiveColour(context),
+                    children: [
+                      const TextSpan(
+                        text: "Men's ",
+                        style: TextStyle(
+                          color: Colours.lightThemeSecondaryTextColour,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Shirts & Watches',
+                        style: TextStyle(
+                          color: Colours.classicAdaptiveTextColour(context),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+            },
+            RoundedButton(
+              text: 'Get Started',
+              onPressed: () {
+                sl<CacheHelper>().cacheFirstTimer();
+                context.go(LoginView.path);
+              },
+            )
+          ],
+        ),
+      ],
     );
   }
 }

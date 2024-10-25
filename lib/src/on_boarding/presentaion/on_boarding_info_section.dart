@@ -1,8 +1,13 @@
+import 'package:dbestech_ecomly/core/common/app/cache_helper.dart';
+import 'package:dbestech_ecomly/core/common/widgets/rounded_button.dart';
 import 'package:dbestech_ecomly/core/extensions/text_extension.dart';
 import 'package:dbestech_ecomly/core/res/media.dart';
 import 'package:dbestech_ecomly/core/res/styles/colours.dart';
 import 'package:dbestech_ecomly/core/res/styles/text.dart';
+import 'package:dbestech_ecomly/core/services/injection_container.dart';
+import 'package:dbestech_ecomly/src/auth/presentation/views/login_view.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OnBoardingInfoSection extends StatelessWidget {
   const OnBoardingInfoSection.first({super.key}) : first = true;
@@ -57,7 +62,14 @@ class OnBoardingInfoSection extends StatelessWidget {
                     ],
                   ),
                 ),
-            }
+            },
+            RoundedButton(
+              text: 'Get Started',
+              onPressed: () {
+                sl<CacheHelper>().cacheFirstTimer();
+                context.go(LoginView.path);
+              },
+            )
           ],
         ),
       ],
