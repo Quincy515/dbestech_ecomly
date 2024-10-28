@@ -36,6 +36,9 @@ final router = GoRouter(
     ),
     GoRoute(
         path: LoginView.path, builder: (context, state) => const LoginView()),
+    GoRoute(
+        path: RegisterView.path,
+        builder: (context, state) => const RegisterView()),
     ShellRoute(
       builder: (context, state, child) =>
           DashboardView(state: state, child: child),

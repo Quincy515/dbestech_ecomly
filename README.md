@@ -19,6 +19,7 @@
       - [3. `lib\core\services\injection_container.main.dart`](#3-libcoreservicesinjection_containermaindart)
       - [4. 修改页面 `lib\src\auth\presentation\views\splash_view.dart`](#4-修改页面-libsrcauthpresentationviewssplash_viewdart)
     - [11.On boarding finalization](#11on-boarding-finalization)
+    - [12. Sign in UI and Sign up UI](#12-sign-in-ui-and-sign-up-ui)
 
 
 ### 1.Theming the app
@@ -3058,4 +3059,10 @@ class OnBoardingInfoSection extends StatelessWidget {
   }
 }
 
+```
+### 12. Sign in UI and Sign up UI
+添加国家选择器 
+
+```shell
+flutter pub add country_picker flutter_multi_formatter && flutter pub get
 ```
