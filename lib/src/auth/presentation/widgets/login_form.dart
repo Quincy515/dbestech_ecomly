@@ -39,12 +39,12 @@ class _LoginFormState extends ConsumerState<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authUserProvider());
-    ref.listen(authUserProvider(), (previous, next) {
+    final authState = ref.watch(authAdapterProvider());
+    ref.listen(authAdapterProvider(), (previous, next) {
       if (next is AuthError) {
         if (!mounted) return;
-        // final AuthError(:message) = next;
-        // CoreUtils.showSnackBar(context, message: message);
+        final AuthError(:message) = next;
+        CoreUtils.showSnackBar(context, message: message);
       } else if (next is LoggedIn) {
         CoreUtils.postFrameCall(() => context.go('/', extra: 'home'));
       }
@@ -105,10 +105,10 @@ class _LoginFormState extends ConsumerState<LoginForm> {
                 final email = emailController.text.trim();
                 final password = passwordController.text.trim();
 
-                // await ref.read(authUserProvider().notifier).login(
-                //       email: email,
-                //       password: password,
-                //     );
+                await ref.read(authAdapterProvider().notifier).login(
+                      email: email,
+                      password: password,
+                    );
               }
             },
           ).loading(authState is AuthLoading),

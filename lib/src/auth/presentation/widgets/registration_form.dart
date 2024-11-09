@@ -68,11 +68,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authUserProvider());
+    final auth = ref.watch(authAdapterProvider());
 
-    ref.listen(authUserProvider(), (previous, next) {
+    ref.listen(authAdapterProvider(), (previous, next) {
       if (next is AuthError) {
-        // CoreUtils.showSnackBar(context, message: next.message);
+        CoreUtils.showSnackBar(context, message: next.message);
       } else if (next is Registered) {
         CoreUtils.postFrameCall(() => context.go('/'));
       }
@@ -207,12 +207,12 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
                 final password = passwordController.text.trim();
                 final fullName = fullNameController.text.trim();
 
-                // await ref.read(authUserProvider().notifier).register(
-                //       name: fullName,
-                //       email: email,
-                //       password: password,
-                //       phone: formattedNumber,
-                //     );
+                await ref.read(authAdapterProvider().notifier).register(
+                      name: fullName,
+                      email: email,
+                      password: password,
+                      phone: formattedNumber,
+                    );
               },
             ).loading(auth is AuthLoading),
           ],

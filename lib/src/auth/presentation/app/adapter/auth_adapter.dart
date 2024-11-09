@@ -37,10 +37,13 @@ class AuthAdapter extends _$AuthAdapter {
   Future<void> login({required String email, required String password}) async {
     state = const AuthLoading();
     final result = await _login(LoginParams(email: email, password: password));
-    result.fold((failure) => state = AuthError(failure.errorMessage), (user) {
-      ref.read(currentUserProvider.notifier).setUser(user);
-      state = LoggedIn(user);
-    });
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (user) {
+        ref.read(currentUserProvider.notifier).setUser(user);
+        state = LoggedIn(user);
+      },
+    );
   }
 
   Future<void> register({
@@ -50,24 +53,36 @@ class AuthAdapter extends _$AuthAdapter {
     required String phone,
   }) async {
     state = const AuthLoading();
-    final result = await _register(RegisterParams(
-        email: email, password: password, name: name, phone: phone));
-    result.fold((failure) => state = AuthError(failure.errorMessage),
-        (_) => state = const Registered());
+    final result = await _register(
+      RegisterParams(
+        email: email,
+        password: password,
+        name: name,
+        phone: phone,
+      ),
+    );
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (_) => state = const Registered(),
+    );
   }
 
   Future<void> forgetPassword({required String email}) async {
     state = const AuthLoading();
     final result = await _forgotPassword(email);
-    result.fold((failure) => state = AuthError(failure.errorMessage),
-        (_) => state = const OTPSent());
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (_) => state = const OTPSent(),
+    );
   }
 
   Future<void> verifyOTP({required String email, required String otp}) async {
     state = const AuthLoading();
     final result = await _verifyOTP(VerifyOTPParams(email: email, otp: otp));
-    result.fold((failure) => state = AuthError(failure.errorMessage),
-        (_) => state = const OTPVerified());
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (_) => state = const OTPVerified(),
+    );
   }
 
   Future<void> resetPassword({
@@ -76,18 +91,23 @@ class AuthAdapter extends _$AuthAdapter {
   }) async {
     state = const AuthLoading();
     final result = await _resetPassword(
-        ResetPasswordParams(email: email, newPassword: newPassword));
-    result.fold((failure) => state = AuthError(failure.errorMessage),
-        (_) => state = const PasswordReset());
+      ResetPasswordParams(email: email, newPassword: newPassword),
+    );
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (_) => state = const PasswordReset(),
+    );
   }
 
   Future<void> verifyToken() async {
     state = const AuthLoading();
     final result = await _verifyToken();
-    result.fold((failure) => state = AuthError(failure.errorMessage),
-        (isValid) {
-      state = TokenVerified(isValid);
-      if (!isValid) ref.read(currentUserProvider.notifier).setUser(null);
-    });
+    result.fold(
+      (failure) => state = AuthError(failure.errorMessage),
+      (isValid) {
+        state = TokenVerified(isValid);
+        if (!isValid) ref.read(currentUserProvider.notifier).setUser(null);
+      },
+    );
   }
 }
