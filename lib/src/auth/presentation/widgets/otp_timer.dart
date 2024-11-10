@@ -52,9 +52,8 @@ class _OtpTimerState extends ConsumerState<OtpTimer> {
       });
       if (_duration == 0) {
         // Increase the duration by 10 seconds after each request
-        if (_mainDuration > 60) {
-          increment *= 2;
-        }
+        if (_mainDuration > 60) increment *= 2;
+
         _mainDuration += increment;
         _duration = _mainDuration;
         // Cancel the timer
@@ -70,9 +69,9 @@ class _OtpTimerState extends ConsumerState<OtpTimer> {
   @override
   Widget build(BuildContext context) {
     // Calculate the number of minutes and seconds
-
     final minutes = _duration ~/ 60;
     final seconds = _duration.remainder(60);
+    
     return Center(
       child: canResend
           ? (resending

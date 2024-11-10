@@ -57,9 +57,13 @@ class _ForgotPasswordFormState extends ConsumerState<ForgotPasswordForm> {
             text: 'Continue',
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                await ref
-                    .read(authAdapterProvider().notifier)
-                    .forgetPassword(email: emailController.text.trim());
+                // await ref
+                //     .read(authAdapterProvider().notifier)
+                //     .forgetPassword(email: emailController.text.trim());
+                context.push(
+                  VerifyOtpView.path,
+                  extra: emailController.text.trim(),
+                );
               }
             },
           ).loading(auth is AuthLoading),

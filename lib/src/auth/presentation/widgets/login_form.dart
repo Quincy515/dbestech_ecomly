@@ -5,7 +5,7 @@ import 'package:dbestech_ecomly/core/extensions/widget_extension.dart';
 import 'package:dbestech_ecomly/core/res/styles/text.dart';
 import 'package:dbestech_ecomly/core/utils/core_utils.dart';
 import 'package:dbestech_ecomly/src/auth/presentation/app/adapter/auth_adapter.dart';
-import 'package:dbestech_ecomly/src/user/presentation/app/auth_user_provider.dart';
+import 'package:dbestech_ecomly/src/auth/presentation/views/forgot_password_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -27,6 +27,13 @@ class _LoginFormState extends ConsumerState<LoginForm> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual(authAdapterProvider(), (previous, next) {
+      if (next is AuthError) {
+        CoreUtils.showSnackBar(context, message: next.message);
+      } else if (next is LoggedIn) {
+        context.go('/', extra: 'home');
+      }
+    });
   }
 
   @override
@@ -40,15 +47,15 @@ class _LoginFormState extends ConsumerState<LoginForm> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authAdapterProvider());
-    ref.listen(authAdapterProvider(), (previous, next) {
-      if (next is AuthError) {
-        if (!mounted) return;
-        final AuthError(:message) = next;
-        CoreUtils.showSnackBar(context, message: message);
-      } else if (next is LoggedIn) {
-        CoreUtils.postFrameCall(() => context.go('/', extra: 'home'));
-      }
-    });
+    // ref.listen(authAdapterProvider(), (previous, next) {
+    //   if (next is AuthError) {
+    //     if (!mounted) return;
+    //     final AuthError(:message) = next;
+    //     CoreUtils.showSnackBar(context, message: message);
+    //   } else if (next is LoggedIn) {
+    //     CoreUtils.postFrameCall(() => context.go('/', extra: 'home'));
+    //   }
+    // });
     return Form(
       key: formKey,
       child: Column(
@@ -89,7 +96,9 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             child: Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  context.push(ForgotPasswordView.path);
+                },
                 child: Text(
                   'Forgot Password?',
                   style: TextStyles.paragraphSubTextRegular1.primary,

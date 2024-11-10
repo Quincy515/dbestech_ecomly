@@ -42,12 +42,12 @@ class _VerifyOtpViewState extends ConsumerState<VerifyOtpView> {
       if (next is AuthError) {
         CoreUtils.showSnackBar(context, message: next.message);
       } else if (next is OTPVerified) {
-        // CoreUtils.postFrameCall(
-        // () => context.pushReplacement(
-        // ResetPasswordView.path,
-        // extra: widget.email,
-        // ),
-        // );
+        CoreUtils.postFrameCall(
+          () => context.pushReplacement(
+            ResetPasswordView.path,
+            extra: widget.email,
+          ),
+        );
       }
     });
     return Scaffold(
@@ -87,8 +87,10 @@ class _VerifyOtpViewState extends ConsumerState<VerifyOtpView> {
                       email: widget.email,
                       otp: otpController.text,
                     );
-                router.pushReplacement(ResetPasswordView.path,
-                    extra: widget.email);
+                router.pushReplacement(
+                  ResetPasswordView.path,
+                  extra: widget.email,
+                );
               }
             },
             text: 'Verify',

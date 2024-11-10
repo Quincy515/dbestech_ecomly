@@ -6,7 +6,6 @@ import 'package:dbestech_ecomly/core/extensions/widget_extension.dart';
 import 'package:dbestech_ecomly/core/utils/core_utils.dart';
 import 'package:dbestech_ecomly/src/auth/presentation/app/adapter/auth_adapter.dart';
 import 'package:dbestech_ecomly/src/auth/presentation/utils/auth_utils.dart';
-import 'package:dbestech_ecomly/src/user/presentation/app/auth_user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

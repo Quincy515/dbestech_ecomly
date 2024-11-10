@@ -80,7 +80,7 @@ class _ResetPasswordFormState extends ConsumerState<ResetPasswordForm> {
             builder: (_, value, __) {
               return VerticalLabelField(
                 label: 'Confirm Password',
-                hintText: 'Re-Enter your password',
+                hintText: 'Re-enter your password',
                 controller: confirmPasswordController,
                 obscureText: value,
                 keyboardType: TextInputType.visiblePassword,

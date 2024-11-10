@@ -35,10 +35,29 @@ final router = GoRouter(
       },
     ),
     GoRoute(
-        path: LoginView.path, builder: (context, state) => const LoginView()),
+      path: LoginView.path,
+      builder: (context, state) => const LoginView(),
+    ),
     GoRoute(
-        path: RegisterView.path,
-        builder: (context, state) => const RegisterView()),
+      path: RegisterView.path,
+      builder: (context, state) => const RegisterView(),
+    ),
+    GoRoute(
+      path: ForgotPasswordView.path,
+      builder: (context, state) => const ForgotPasswordView(),
+    ),
+    GoRoute(
+      path: ResetPasswordView.path,
+      builder: (context, state) => ResetPasswordView(
+        email: state.extra as String,
+      ),
+    ),
+    GoRoute(
+      path: VerifyOtpView.path,
+      builder: (context, state) => VerifyOtpView(
+        email: state.extra as String,
+      ),
+    ),
     ShellRoute(
       builder: (context, state, child) =>
           DashboardView(state: state, child: child),

@@ -114,7 +114,8 @@ class AuthRemoteDataSourceImplementation implements AuthRemoteDataSource {
       await sl<CacheHelper>().cacheUserId(user.id);
 
       return user;
-    } on ServerException {
+    } on ServerException catch (e) {
+      debugPrint('Error ${e.statusCode}: ${e.message}');
       rethrow;
     } catch (e, s) {
       debugPrint(e.toString());
