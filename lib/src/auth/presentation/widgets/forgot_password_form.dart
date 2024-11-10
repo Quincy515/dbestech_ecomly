@@ -1,6 +1,7 @@
 import 'package:dbestech_ecomly/core/common/widgets/rounded_button.dart';
 import 'package:dbestech_ecomly/core/common/widgets/vertical_label_field.dart';
 import 'package:dbestech_ecomly/core/extensions/widget_extension.dart';
+import 'package:dbestech_ecomly/core/res/styles/text.dart';
 import 'package:dbestech_ecomly/core/services/router.dart';
 import 'package:dbestech_ecomly/core/utils/core_utils.dart';
 import 'package:dbestech_ecomly/src/auth/presentation/app/adapter/auth_adapter.dart';
@@ -46,6 +47,19 @@ class _ForgotPasswordFormState extends ConsumerState<ForgotPasswordForm> {
       key: formKey,
       child: Column(
         children: <Widget>[
+          if (auth case AuthError(:final message))
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                message,
+                style: TextStyles.paragraphRegular.apply(
+                  color: Colors.red,
+                ),
+              ),
+            ),
           VerticalLabelField(
             label: 'Email',
             hintText: 'Enter your email',
@@ -57,13 +71,9 @@ class _ForgotPasswordFormState extends ConsumerState<ForgotPasswordForm> {
             text: 'Continue',
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                // await ref
-                //     .read(authAdapterProvider().notifier)
-                //     .forgetPassword(email: emailController.text.trim());
-                context.push(
-                  VerifyOtpView.path,
-                  extra: emailController.text.trim(),
-                );
+                await ref
+                    .read(authAdapterProvider().notifier)
+                    .forgetPassword(email: emailController.text.trim());
               }
             },
           ).loading(auth is AuthLoading),

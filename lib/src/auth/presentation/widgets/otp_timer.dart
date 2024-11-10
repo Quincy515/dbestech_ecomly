@@ -32,10 +32,18 @@ class _OtpTimerState extends ConsumerState<OtpTimer> {
     super.initState();
     // Start the timer
     _startTimer();
+
+    ref.listenManual(authAdapterProvider(widget.familyKey), (previous, next) {
+      if (next is OTPSent) {
+        _startTimer();
+        setState(() {
+          canResend = false;
+        });
+      }
+    });
   }
 
   bool canResend = false;
-  bool resending = false;
 
   @override
   void dispose() {
@@ -71,55 +79,43 @@ class _OtpTimerState extends ConsumerState<OtpTimer> {
     // Calculate the number of minutes and seconds
     final minutes = _duration ~/ 60;
     final seconds = _duration.remainder(60);
-    
+
+    final authState = ref.read(authAdapterProvider(widget.familyKey));
+
     return Center(
-      child: canResend
-          ? (resending
-              ? const Center(
-                  child: CircularProgressIndicator.adaptive(
-                    backgroundColor: Colours.lightThemePrimaryColour,
-                  ),
-                )
-              : TextButton(
-                  onPressed: () async {
-                    setState(() {
-                      resending = true;
-                    });
-
-                    await ref
-                        .read(authAdapterProvider(widget.familyKey).notifier)
-                        .forgetPassword(
-                          email: widget.email,
-                        );
-
-                    setState(() {
-                      resending = false;
-                    });
-                    _startTimer();
-                    setState(() {
-                      canResend = false;
-                    });
-                  },
-                  child: Text(
-                    'Resend Code',
-                    style: TextStyles.headingMedium4.primary,
-                  ),
-                ))
-          : RichText(
-              text: TextSpan(
-                text: 'Resend code in ',
-                style: TextStyles.headingMedium4.grey,
-                children: [
-                  TextSpan(
-                    text: '$minutes:${seconds.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
-                      color: Colours.lightThemePrimaryColour,
-                    ),
-                  ),
-                  const TextSpan(text: ' seconds'),
-                ],
+      child: switch (canResend) {
+        true => switch (authState) {
+            AuthLoading _ => const SizedBox.shrink(),
+            _ => TextButton(
+                onPressed: () {
+                  ref
+                      .read(authAdapterProvider(widget.familyKey).notifier)
+                      .forgetPassword(
+                        email: widget.email,
+                      );
+                },
+                child: Text(
+                  'Resend Code',
+                  style: TextStyles.headingMedium4.primary,
+                ),
               ),
+          },
+        _ => RichText(
+            text: TextSpan(
+              text: 'Resend code in ',
+              style: TextStyles.headingMedium4.grey,
+              children: [
+                TextSpan(
+                  text: '$minutes:${seconds.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    color: Colours.lightThemePrimaryColour,
+                  ),
+                ),
+                const TextSpan(text: ' seconds'),
+              ],
             ),
+          ),
+      },
     );
   }
 }

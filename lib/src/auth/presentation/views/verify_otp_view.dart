@@ -38,7 +38,7 @@ class _VerifyOtpViewState extends ConsumerState<VerifyOtpView> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authAdapterProvider(familyKey));
-    ref.listen(authAdapterProvider(), (previous, next) {
+    ref.listen(authAdapterProvider(familyKey), (previous, next) {
       if (next is AuthError) {
         CoreUtils.showSnackBar(context, message: next.message);
       } else if (next is OTPVerified) {
