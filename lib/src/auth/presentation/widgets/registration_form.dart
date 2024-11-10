@@ -50,6 +50,14 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
         countryController.text = countryNotifier.value!.phoneCode;
       }
     });
+
+    ref.listenManual(authAdapterProvider(), (previous, next) {
+      if (next is AuthError) {
+        CoreUtils.showSnackBar(context, message: next.message);
+      } else if (next is Registered) {
+        context.go('/');
+      }
+    });
   }
 
   @override
@@ -69,13 +77,14 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authAdapterProvider());
 
-    ref.listen(authAdapterProvider(), (previous, next) {
-      if (next is AuthError) {
-        CoreUtils.showSnackBar(context, message: next.message);
-      } else if (next is Registered) {
-        CoreUtils.postFrameCall(() => context.go('/'));
-      }
-    });
+    // ref.listen(authAdapterProvider(), (previous, next) {
+    //   if (next is AuthError) {
+    //     CoreUtils.showSnackBar(context, message: next.message);
+    //   } else if (next is Registered) {
+    //     CoreUtils.postFrameCall(() => context.go('/'));
+    //   }
+    // });
+
     return Form(
         key: formKey,
         child: Column(
@@ -197,21 +206,23 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
             RoundedButton(
               text: 'Sign Up',
               onPressed: () async {
-                FocusManager.instance.primaryFocus?.unfocus();
-                final phonNumber = phoneController.text.trim();
-                final country = countryNotifier.value!;
-                final formattedNumber =
-                    '+${country.phoneCode}${toNumericString(phonNumber)}';
-                final email = emailController.text.trim();
-                final password = passwordController.text.trim();
-                final fullName = fullNameController.text.trim();
+                if (formKey.currentState!.validate()) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  final phonNumber = phoneController.text.trim();
+                  final country = countryNotifier.value!;
+                  final formattedNumber =
+                      '+${country.phoneCode}${toNumericString(phonNumber)}';
+                  final email = emailController.text.trim();
+                  final password = passwordController.text.trim();
+                  final fullName = fullNameController.text.trim();
 
-                await ref.read(authAdapterProvider().notifier).register(
-                      name: fullName,
-                      email: email,
-                      password: password,
-                      phone: formattedNumber,
-                    );
+                  await ref.read(authAdapterProvider().notifier).register(
+                        name: fullName,
+                        email: email,
+                        password: password,
+                        phone: formattedNumber,
+                      );
+                }
               },
             ).loading(auth is AuthLoading),
           ],
